@@ -36,12 +36,22 @@ body,.wordlogo,.wordlogo small,.wordlogo b{font-family:'CoFo Sans','Golos Text',
 <style>
 .envelope{background:#FFFFFF;border:1.5px solid #007BFC;box-shadow:0 12px 24px #003B8326,0 0 0 1px #FFFFFF;}
 </style>
+<style>
+.connection-note{margin-top:14px;padding:12px 14px;border-radius:12px;background:#e9f4fb;color:#375c82;font-size:13px}
+.client-access{margin:14px 0;padding:15px;border:1px dashed #9db9d2;border-radius:13px;background:#f5f9fc}
+.client-access strong{display:block;margin-bottom:5px}.agent-login{max-width:480px;margin:38px auto}.agent-login .panel{padding:26px}
+.error-note{margin:12px 0;padding:11px 13px;border-radius:11px;background:#fff0ed;color:#9b4646;font-size:13px}
+.envelope{background:#fff!important;border:1.5px solid #164a9a!important;box-shadow:0 14px 25px #123b7028!important}
+.env-flap{background:linear-gradient(155deg,#dceafb,#b9d3ef)!important}
+.envelope:before{background:linear-gradient(34deg,transparent 49.4%,#1d5797 49.8%,transparent 50.4%),linear-gradient(-34deg,transparent 49.4%,#1d5797 49.8%,transparent 50.4%)!important}
+.seal{background:radial-gradient(circle at 35% 30%,#f4d98b,#b68432 70%)!important;color:#233c5d!important}
+</style>
 </head>
 <body><div class="app" id="app"></div><div class="toast" id="toast"></div><div id="modal-root"></div>
 <script>
 const STEPS=['Новый лид','Связались','Квалифицирован','Показ объекта','Сделка закрыта','Конверт отправлен'];
 const clone=o=>JSON.parse(JSON.stringify(o));
-const defaults=()=>({role:'client',clientTab:'Рекомендовать',agentTab:'Лиды',profile:{name:'Николай Калиберда',agency:'Самолет Плюс',city:'Санкт-Петербург',currency:'₽',reward:10000,details:'СБП +7 906 249-11-40 (Альфа)\nКарта Мир',greeting:'Спасибо, что рекомендуете меня! Каждый ваш контакт — на вес золота',invite:'Привет! Если вам или знакомым нужна помощь с покупкой, продажей или арендой недвижимости в Санкт-Петербурге, рекомендую Николая Калиберду из Самолет Плюс. Николай поможет разобраться во всех деталях и будет на связи на каждом этапе.'},formats:{money:true,symbolic:false,discount:false,gift:false},leads:[{id:1,name:'Анна Петрова',contact:'+7 911 234-56-78',need:'Купить',comment:'Ищет двушку у метро',step:2,referrer:'Мария Соколова'},{id:2,name:'Илья Смирнов',contact:'@ilya_s',need:'Продать',comment:'Квартира на Васильевском острове',step:4,referrer:'Олег Кузнецов'},{id:3,name:'Екатерина Волкова',contact:'+7 921 555-08-12',need:'Аренда',comment:'Сдаёт студию, долгосрочно',step:1,referrer:'Вы'},{id:4,name:'Дмитрий Орлов',contact:'@d_orlov',need:'Купить',comment:'',step:0,referrer:'Алексей' }],envelopes:[{id:1,leadId:2,from:'Николай Калиберда',amount:'10 000 ₽',format:'Денежная благодарность',message:'Спасибо за ваше доверие и рекомендацию! Буду рад помочь вам снова.',details:'СБП +7 906 249-11-40 (Альфа) · Карта Мир',opened:false}]});
+const defaults=()=>({role:'client',clientTab:'Рекомендовать',agentTab:'Лиды',profile:{name:'Николай Калиберда',agency:'Самолет Плюс',city:'Санкт-Петербург',currency:'₽',reward:10000,details:'',greeting:'Спасибо, что рекомендуете меня! Каждый ваш контакт — на вес золота',invite:'Привет! Если вам или знакомым нужна помощь с покупкой, продажей или арендой недвижимости в Санкт-Петербурге, рекомендую Николая Калиберду из Самолет Плюс. Николай поможет разобраться во всех деталях и будет на связи на каждом этапе.'},formats:{money:true,symbolic:false,discount:false,gift:false},leads:[],envelopes:[]});
 let state=defaults(),selectedLead=null,filter='Все';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function save(){/* состояние хранится только в памяти текущей страницы */}
@@ -52,7 +62,7 @@ function setRole(role){state.role=role;selectedLead=null;render()}
 function addLead(fd){state.leads.unshift({id:Date.now(),name:fd.get('name'),contact:fd.get('contact'),need:fd.get('need'),comment:fd.get('comment'),step:0,referrer:'Вы'});state.clientTab='Мои лиды';render();toast('Рекомендация отправлена Николаю')}
 function doOpen(id){let e=state.envelopes.find(x=>x.id===id);if(!e)return;e.opened=true;render();setTimeout(()=>toast('Конверт открыт — Николай увидит отметку'),700)}
 function navTab(tab){state[state.role==='client'?'clientTab':'agentTab']=tab;selectedLead=null;render()}
-function render(){const app=document.querySelector('#app');app.innerHTML=`<header class="top"><div class="brand"><div class="brandmark" aria-hidden="true">${icon('plane')}</div><div class="wordlogo"><span>самолет</span><b>плюс</b><small>Синий конверт · благодарность за рекомендации</small></div></div><div class="top-actions"><div class="role-switch"><button class="${state.role==='client'?'active':''}" onclick="setRole('client')">Клиент</button><button class="${state.role==='agent'?'active':''}" onclick="setRole('agent')">Риелтор</button></div><button class="iconbtn" onclick="reset()">Сбросить демо</button></div></header>${hero()}<div class="content"><main class="maincol">${state.role==='client'?clientView():agentView()}</main><aside class="side">${sideView()}</aside></div><div class="footer">Демо-сервис благодарности за рекомендации · Самолет Плюс · Санкт-Петербург</div>${bottomNav()}`;}
+function render(){const app=document.querySelector('#app');app.innerHTML=`<header class="top"><div class="brand"><div class="brandmark" aria-hidden="true">${icon('plane')}</div><div class="wordlogo"><span>самолет</span><b>плюс</b><small>Синий конверт · благодарность за рекомендации</small></div></div><div class="top-actions"><div class="role-switch"><button class="${state.role==='client'?'active':''}" onclick="setRole('client')">Клиент</button><button class="${state.role==='agent'?'active':''}" onclick="setRole('agent')">Риелтор</button></div>${state.role==='agent'?'<button class="iconbtn" onclick="logoutAgent()">Выйти</button>':''}</div></header>${hero()}<div class="content"><main class="maincol">${state.role==='client'?clientView():agentView()}</main><aside class="side">${sideView()}</aside></div><div class="footer">Сервис благодарности за рекомендации · Самолет Плюс · Санкт-Петербург</div>${bottomNav()}`;}
 function icon(name){let paths={plane:'<path d="M3 11.5 21 4l-7.5 17-2-7.5-8.5-2Z"/><path d="m11.5 13.5 5-5"/>',recommend:'<path d="M12 5v14M5 12h14"/>',leads:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h4"/>',wallet:'<rect x="3.5" y="6" width="17" height="14" rx="3"/><path d="M4 8V6a2 2 0 0 1 2-2h11M15 13h.01"/><path d="M16 11h4v5h-4a2.5 2.5 0 0 1 0-5Z"/>',help:'<circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.4 2.4 0 1 1 4.4 1.3c-1 1.2-2.1 1.3-2.1 3M12 17h.01"/>',reward:'<path d="M12 3 14.7 8.5 21 9.4l-4.5 4.4 1 6.2L12 17l-5.5 3 1-6.2L3 9.4l6.3-.9L12 3Z"/>',profile:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>'};return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${paths[name]||paths.help}</svg>`}
 function hero(){return `<section class="hero"><div><div class="eyebrow">Рекомендации, за которые благодарят</div><h1>Доброе слово<br>с конвертом</h1><p>Передайте контакт с согласия человека — Николай поможет ему с недвижимостью, а вам скажет спасибо.</p><div class="hero-buttons"><button class="primary" onclick="setRole('client');navTab('Рекомендовать')">Я рекомендую</button><button class="secondary" onclick="setRole('agent');navTab('Лиды')">Я риелтор</button><button class="secondary" onclick="setRole('client');navTab('Как это работает')">Как это работает　↗</button></div></div><div class="hero-art">${envelopeMarkup()}</div></section>`}
 function tabs(items,active){return `<nav class="tabs">${items.map(x=>`<button class="tab ${active===x?'active':''}" onclick="navTab('${x}')">${x}</button>`).join('')}</nav>`}
@@ -73,8 +83,136 @@ function bottomNav(){let items=state.role==='client'?['Рекомендоват�
 function copyText(t){if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>toast('Скопировано в буфер обмена')).catch(()=>fallbackCopy(t));else fallbackCopy(t)}function fallbackCopy(t){let a=document.createElement('textarea');a.value=t;document.body.append(a);a.select();document.execCommand('copy');a.remove();toast('Скопировано в буфер обмена')}
 function openSendModal(id){let p=state.profile;document.querySelector('#modal-root').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modalhead"><div><h2>Отправить синий конверт</h2><div class="sub">Получатель: ${esc(state.leads.find(l=>l.id===id).referrer)}</div></div><button class="close" onclick="closeModal()">×</button></div><form onsubmit="event.preventDefault();sendEnvelope(${id},new FormData(this))"><div class="field" style="margin-top:17px"><label>Формат награды</label><select name="format">${[['money','Денежная благодарность'],['symbolic','Символический конверт'],['discount','Скидка на услуги'],['gift','Подарочная карта']].filter(([k])=>state.formats[k]).map(([,n])=>`<option>${n}</option>`).join('')||'<option>Символический конверт</option>'}</select></div><div class="field"><label>Сумма или номинал</label><input name="amount" value="${p.reward.toLocaleString('ru-RU')} ${esc(p.currency)}" required/></div><div class="field"><label>Личное сообщение</label><textarea name="message" required>Спасибо за рекомендацию и доверие! Буду рад помочь вам снова.</textarea></div><div class="field"><label>Реквизиты для перевода</label><textarea name="details">${esc(p.details)}</textarea></div><button class="goldbtn" type="submit">Запечатать и отправить</button></form></div></div>`}
 function closeModal(){document.querySelector('#modal-root').innerHTML=''}function sendEnvelope(id,fd){let l=state.leads.find(x=>x.id===id),format=fd.get('format');state.envelopes.unshift({id:Date.now(),leadId:id,from:state.profile.name,amount:fd.get('amount'),format,message:fd.get('message'),details:fd.get('details'),opened:false});l.step=5;closeModal();render();toast('Синий конверт отправлен в кошелёк клиента')}
-render();
+</script>
+<script>
+(() => {
+  const SB_URL = 'https://tiuhylsnepeaumrnldpk.supabase.co';
+  const SB_KEY = 'sb_publishable_14iO_WGcrWHAHj1b4wsi_w_GZHzYuyV';
+  const API_URL = `${SB_URL}/functions/v1/sinij-konvert-api`;
+  const previousRender = window.render;
+  let agentToken = '', portalToken = new URLSearchParams(location.hash.slice(1)).get('client') || '';
+  let busy = false, pageError = '';
+  const slug = new URLSearchParams(location.search).get('ref') || 'nikolay-kaliberda';
+  state = defaults(); state.leads = []; state.envelopes = []; state.role = 'client';
+
+  async function callApi(action, payload = {}, token = '') {
+    const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${token || SB_KEY}`}, body:JSON.stringify({action,...payload}) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Не удалось связаться с сервисом.');
+    return data;
+  }
+  function applySnapshot(data) {
+    if (data.profile) state.profile = { ...state.profile, ...data.profile, details:data.profile.details ?? state.profile.details };
+    state.leads = data.leads || []; state.envelopes = data.envelopes || [];
+  }
+  function renderMessage(title, message, retry = '') {
+    document.querySelector('#app').innerHTML = `<header class="top"><div class="brand"><div class="brandmark">✦</div><div class="wordlogo"><span>самолет</span><b>плюс</b><small>Синий конверт</small></div><div class="role-switch"><button onclick="setRole('client')">К клиентам</button></div></header><section class="panel agent-login"><h2 class="section-title">${esc(title)}</h2><p class="sub">${esc(message)}</p>${retry?`<button class="softbtn" style="margin-top:14px" onclick="loadClient()">Повторить</button>`:''}</section>`;
+  }
+  function authView(error = '') {
+    document.querySelector('#app').innerHTML = `<header class="top"><div class="brand"><div class="brandmark">✦</div><div class="wordlogo"><span>самолет</span><b>плюс</b><small>Синий конверт · кабинет риелтора</small></div></div><button class="softbtn" onclick="setRole('client')">К клиентам</button></header><section class="panel agent-login"><div class="eyebrow">Вход риелтора</div><h2 class="section-title" style="margin-top:9px">Лиды и награды</h2><p class="sub">Войдите в свой аккаунт, чтобы открыть данные клиентов.</p>${error?`<div class="error-note">${esc(error)}</div>`:''}<form onsubmit="event.preventDefault();loginAgent(new FormData(this))"><div class="field" style="margin-top:18px"><label>Электронная почта</label><input type="email" name="email" autocomplete="username" required placeholder="name@example.com"></div><div class="field"><label>Пароль</label><input type="password" name="password" autocomplete="current-password" required></div><button class="goldbtn" type="submit">Войти</button></form><div class="connection-note">Если аккаунта ещё нет, создайте его в Supabase: Authentication → Users → Add user. Затем вернитесь сюда и войдите.</div></section>`;
+  }
+  window.render = function() {
+    if (state.role === 'agent' && !agentToken) return authView();
+    if (busy) return renderMessage('Загружаю данные', 'Подключаю защищённое хранилище…');
+    if (pageError) return renderMessage('Не удалось открыть сервис', pageError, 'retry');
+    previousRender();
+  };
+  window.setRole = function(role) { state.role = role; selectedLead = null; pageError=''; render(); };
+  window.navTab = function(tab) { state[state.role==='client'?'clientTab':'agentTab']=tab; selectedLead=null; render(); };
+
+  window.loginAgent = async function(form) {
+    const email=form.get('email'), password=form.get('password');
+    try {
+      const response=await fetch(`${SB_URL}/auth/v1/token?grant_type=password`,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY},body:JSON.stringify({email,password})});
+      const auth=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error('Не удалось войти. Проверьте почту и пароль. Если аккаунта нет, создайте пользователя в Supabase.');
+      agentToken=auth.access_token; busy=true; render();
+      applySnapshot(await callApi('agent_data',{},agentToken));
+      busy=false; state.role='agent'; state.agentTab='Лиды'; render();
+    } catch(error) { busy=false; authView(error.message || 'Ошибка входа.'); }
+  };
+  window.logoutAgent = function() { agentToken=''; state.role='client'; selectedLead=null; render(); };
+
+  window.recommendView = function() {
+    const p=state.profile;
+    return `<h2 class="section-title">Поделитесь контактом</h2><p class="sub">${esc(p.name)} свяжется с человеком и поможет с его задачей.</p><section class="panel" style="margin-top:16px"><div class="profileline"><div class="avatar">НК</div><div><h3>${esc(p.name)}</h3><p>${esc(p.agency)} · ${esc(p.city)}</p></div></div><div class="quote">«${esc(p.greeting)}»</div></section><form class="panel" onsubmit="event.preventDefault();addLead(new FormData(this))"><div class="formgrid"><div class="field"><label>Ваше имя</label><input name="referrerName" placeholder="Как к вам обращаться"></div><div class="field"><label>Имя человека</label><input name="name" required placeholder="Например, Анна"></div><div class="field span2"><label>Телефон или Telegram</label><input name="contact" required placeholder="+7… или @username"></div><div class="field span2"><label>Что нужно?</label><select name="need"><option>Купить</option><option>Продать</option><option>Аренда</option></select></div><div class="field span2"><label>Комментарий</label><textarea name="comment" placeholder="Коротко о запросе или удобном времени для связи"></textarea></div></div><button class="goldbtn" type="submit">Передать рекомендацию　→</button><p class="fine" style="margin:12px 0 0">Отправляя форму, вы подтверждаете, что человек согласен поделиться своим номером.</p></form><div class="notice">Делитесь номером телефона только с согласия человека. Ваши рекомендации и статусы видны по персональной ссылке.</div>`;
+  };
+  window.addLead = async function(fd) {
+    try {
+      busy=true; render();
+      const data=await callApi('create_lead',{slug,clientToken:portalToken,name:fd.get('name'),contact:fd.get('contact'),need:fd.get('need'),comment:fd.get('comment'),referrerName:fd.get('referrerName')});
+      portalToken=data.clientToken;
+      history.replaceState(null,'',`${location.pathname}?ref=${encodeURIComponent(data.profile.slug||slug)}#client=${encodeURIComponent(portalToken)}`);
+      applySnapshot(data); state.clientTab='Мои лиды'; busy=false; render(); toast('Рекомендация отправлена Николаю. Сохраните персональную ссылку.');
+    } catch(error) { busy=false; render(); toast(error.message || 'Не удалось отправить рекомендацию.'); }
+  };
+  window.myLeadsView = function() {
+    const link=portalToken?`${location.origin}${location.pathname}?ref=${encodeURIComponent(state.profile.slug||slug)}#client=${encodeURIComponent(portalToken)}`:'';
+    return `<h2 class="section-title">Мои лиды</h2><p class="sub">Следите за каждым шагом ваших рекомендаций.</p>${link?`<div class="client-access"><strong>Сохраните ссылку для повторного входа</strong><span class="fine">По ней вы снова откроете свои рекомендации и конверты.</span><br><button class="softbtn" style="margin-top:10px" onclick="copyText('${link}')">Копировать мою ссылку</button></div>`:''}<section class="panel" style="margin-top:16px">${state.leads.map(l=>`<article class="leadrow"><div><div class="leadname">${esc(l.name)}</div><div class="leadmeta">${esc(l.need)} · ${esc(l.contact)}</div>${stepper(l.step)}</div><span class="badge ${l.step>=4?'gold':''}">${esc(STEPS[l.step])}</span></article>`).join('')||'<div class="empty">Пока нет рекомендаций. Отправьте первый контакт!</div>'}</section>`;
+  };
+  window.walletView = function() {
+    return `<div class="wallet-hero"><div><h2 class="section-title">Кошелёк</h2><p class="sub">Ваши конверты благодарности</p></div><span class="badge gold">${state.envelopes.length} конвертов</span></div>${state.envelopes.length?state.envelopes.map(e=>`<section class="panel" style="margin-top:16px"><div class="wallet-env" onclick="${e.opened?'':'doOpen(\''+e.id+'\')'}"><div class="envelope ${e.opened?'open':''}"><div class="env-card"><small>с благодарностью</small><strong>${esc(e.amount)}</strong></div><div class="env-flap"></div><div class="seal">福</div></div><span class="badge ${e.opened?'':'gold'}">${e.opened?'Конверт открыт':'Нажмите, чтобы открыть'}</span></div>${e.opened?`<div class="wallet-card"><small>Вам отправил ${esc(state.profile.name)}</small><strong>${esc(e.amount)}</strong><p>${esc(e.format)}</p><div class="message">«${esc(e.message)}»</div><p style="margin-bottom:0"><b>Откуда придёт награда:</b><br>${esc(e.details)}</p></div>`:''}</section>`).join(''):'<div class="panel empty"><span>✉</span>Пока конвертов нет. Они появятся здесь после закрытия сделки.</div>'}`;
+  };
+  window.doOpen = async function(id) {
+    const e=state.envelopes.find(x=>x.id===id); if(!e||e.opened)return;
+    e.opened=true; render();
+    try { applySnapshot(await callApi('open_envelope',{clientToken:portalToken,envelopeId:id})); render(); toast('Конверт открыт — Николай увидит отметку'); }
+    catch(error) { e.opened=false; render(); toast(error.message || 'Не удалось открыть конверт.'); }
+  };
+  window.leadsView = function() {
+    const active=state.leads.filter(l=>l.step<4).length,closed=state.leads.filter(l=>l.step>=4).length;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2 class="section-title">Воронка рекомендаций</h2><p class="sub">Обновляйте статусы — клиент увидит прогресс.</p></div><button class="softbtn" onclick="refreshAgent()">Обновить</button></div><div class="statgrid"><div class="stat"><strong>${active}</strong><span>В работе</span></div><div class="stat"><strong>${closed}</strong><span>Сделок</span></div><div class="stat"><strong>${state.envelopes.length}</strong><span>Конвертов</span></div></div><section class="panel">${state.leads.map(l=>`<div class="leadrow"><button onclick="selectedLead='${l.id}';render()"><div class="leadname">${esc(l.name)}</div><div class="leadmeta">${esc(l.need)} · ${esc(l.contact)} · Рекомендовал: ${esc(l.referrer)}</div></button><button onclick="selectedLead='${l.id}';render()"><span class="badge ${l.step>=4?'gold':''}">${esc(STEPS[l.step])}</span></button></div>`).join('')||'<div class="empty">Пока нет рекомендаций.</div>'}</section><button class="softbtn" onclick="logoutAgent()">Выйти из кабинета</button>`;
+  };
+  window.leadDetail = function(id) {
+    const l=state.leads.find(x=>x.id===id); if(!l){selectedLead=null;return leadsView();}
+    const envelope=state.envelopes.find(x=>x.lead_id===id||x.leadId===id);
+    return `<button class="back" onclick="selectedLead=null;render()">← Все лиды</button><section class="panel"><div class="detailhead"><div><h2 class="section-title">${esc(l.name)}</h2><p class="sub">${esc(l.need)} · ${esc(l.contact)}</p></div><span class="badge blue">От ${esc(l.referrer)}</span></div><p>${esc(l.comment||'Комментария нет')}</p><div class="field"><label>Статус воронки</label><select onchange="setLeadStep('${id}',this.value)">${STEPS.slice(0,5).map((s,i)=>`<option value="${i}" ${l.step===i?'selected':''}>${s}</option>`).join('')}</select></div>${l.step>=4&&!envelope?`<button class="goldbtn" onclick="openSendModal('${id}')">✉　Отправить синий конверт</button>`:''}${envelope?`<p class="fine">${envelope.opened?'✓ Получатель открыл конверт':'✉ Конверт отправлен — ожидаем открытия'}</p>`:''}<hr style="border:0;border-top:1px solid var(--line);margin:20px 0">${stepper(l.step)}</section>`;
+  };
+  window.setLeadStep = async function(id,status) {
+    try { busy=true; render(); applySnapshot(await callApi('update_status',{leadId:id,status:Number(status)},agentToken)); busy=false; render(); toast('Статус обновлён'); }
+    catch(error) { busy=false; render(); toast(error.message||'Не удалось обновить статус.'); }
+  };
+  window.rewardsView = function() {
+    const p=state.profile,f=p.formats||{};
+    return `<h2 class="section-title">Награды и конверты</h2><p class="sub">Выберите, чем благодарить за рекомендацию.</p><section class="panel" style="margin-top:16px"><h3 class="side-title">Форматы благодарности</h3><div class="choicegrid">${[['money','Деньги','Сумма или процент от комиссии'],['symbolic','Символический конверт','Без денежного перевода'],['discount','Скидка на услуги','На мои услуги'],['gift','Подарочная карта','Номинал на выбор']].map(([k,n,d])=>`<label class="choice"><input type="checkbox" ${f[k]?'checked':''} onchange="state.profile.formats.${k}=this.checked"/><span>${n}<small>${d}</small></span></label>`).join('')}</div><div class="formgrid" style="margin-top:17px"><div class="field"><label>Награда по умолчанию</label><input value="${p.reward}" type="number" onchange="state.profile.reward=+this.value"/></div><div class="field"><label>Валюта</label><select onchange="state.profile.currency=this.value">${['₽','€','$','£','¥','₸','₾'].map(c=>`<option ${p.currency===c?'selected':''}>${c}</option>`).join('')}</select></div><div class="field span2"><label>Реквизиты для выплат — страна и система любые</label><textarea onchange="state.profile.details=this.value">${esc(p.details)}</textarea></div></div><button class="goldbtn" onclick="saveAgentProfile()">Сохранить настройки</button><div class="notice" style="margin-top:14px">Приложение не проводит платежи — перевод риелтор делает сам. В некоторых странах денежные вознаграждения нелицензированным лицам ограничены. В таком случае выбирайте символический конверт, скидку или подарочную карту.</div></section>`;
+  };
+  window.profileView = function() {
+    const p=state.profile, invite=`${location.origin}${location.pathname}?ref=${encodeURIComponent(p.slug||slug)}`;
+    return `<h2 class="section-title">Профиль</h2><p class="sub">Ваша карточка, приветствие и приглашение.</p><section class="panel" style="margin-top:16px"><div class="profileline" style="margin-bottom:17px"><div class="avatar">НК</div><div><h3>${esc(p.name)}</h3><p>${esc(p.agency)} · ${esc(p.city)}</p></div></div><div class="formgrid"><div class="field"><label>Имя риелтора</label><input value="${esc(p.name)}" onchange="state.profile.name=this.value"/></div><div class="field"><label>Агентство</label><input value="${esc(p.agency)}" onchange="state.profile.agency=this.value"/></div><div class="field span2"><label>Город</label><input value="${esc(p.city)}" onchange="state.profile.city=this.value"/></div><div class="field span2"><label>Приветствие клиентам</label><textarea onchange="state.profile.greeting=this.value">${esc(p.greeting)}</textarea></div></div><button class="goldbtn" onclick="saveAgentProfile()">Сохранить профиль</button></section><section class="panel"><h3 class="side-title">Ваша ссылка-приглашение</h3><div class="invite">${esc(invite)}</div><button class="softbtn" style="margin-top:10px" onclick="copyText('${invite}')">Копировать ссылку</button><div class="field" style="margin-top:18px"><label>Готовый текст приглашения</label><textarea id="invite-text" onchange="state.profile.invite=this.value">${esc(p.invite)}</textarea></div><button class="softbtn" onclick="copyText(document.querySelector('#invite-text').value)">Копировать текст</button></section>`;
+  };
+  window.saveAgentProfile = async function() {
+    try { busy=true; render(); const p=state.profile; applySnapshot(await callApi('update_profile',{profile:{name:p.name,agency:p.agency,city:p.city,currency:p.currency,reward:p.reward,payout_details:p.details,greeting:p.greeting,invite_text:p.invite,formats:p.formats}},agentToken)); busy=false; render(); toast('Изменения сохранены'); }
+    catch(error) { busy=false; render(); toast(error.message||'Не удалось сохранить изменения.'); }
+  };
+  window.refreshAgent = async function() {
+    try { applySnapshot(await callApi('agent_data',{},agentToken)); render(); }
+    catch(error) { toast(error.message||'Не удалось обновить данные.'); }
+  };
+  window.sendEnvelope = async function(id,fd) {
+    try { busy=true; render(); applySnapshot(await callApi('send_envelope',{leadId:id,format:fd.get('format'),amount:fd.get('amount'),message:fd.get('message'),payoutDetails:fd.get('details')},agentToken)); busy=false; closeModal(); render(); toast('Синий конверт отправлен клиенту'); }
+    catch(error) { busy=false; render(); toast(error.message||'Не удалось отправить конверт.'); }
+  };
+  window.openSendModal = function(id) {
+    const p=state.profile;
+    document.querySelector('#modal-root').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modalhead"><div><h2>Отправить синий конверт</h2><div class="sub">Получатель: ${esc(state.leads.find(l=>l.id===id)?.referrer||'клиент')}</div></div><button class="close" onclick="closeModal()">×</button></div><form onsubmit="event.preventDefault();sendEnvelope('${id}',new FormData(this))"><div class="field" style="margin-top:17px"><label>Формат награды</label><select name="format">${[['money','Денежная благодарность'],['symbolic','Символический конверт'],['discount','Скидка на услуги'],['gift','Подарочная карта']].filter(([k])=>p.formats?.[k]).map(([,n])=>`<option>${n}</option>`).join('')||'<option>Символический конверт</option>'}</select></div><div class="field"><label>Сумма или номинал</label><input name="amount" value="${Number(p.reward).toLocaleString('ru-RU')} ${esc(p.currency)}" required/></div><div class="field"><label>Личное сообщение</label><textarea name="message" required>Спасибо за рекомендацию и доверие! Буду рад помочь вам снова.</textarea></div><div class="field"><label>Реквизиты для перевода</label><textarea name="details">${esc(p.details)}</textarea></div><button class="goldbtn" type="submit">Запечатать и отправить</button></form></div></div>`;
+  };
+
+  async function loadClient() {
+    busy=true; pageError=''; render();
+    try {
+      if (portalToken) applySnapshot(await callApi('client_portal',{clientToken:portalToken}));
+      else { const data=await callApi('public_profile',{slug}); applySnapshot(data); }
+      busy=false; render();
+    } catch(error) { busy=false; pageError=error.message||'Не удалось загрузить профиль риелтора.'; render(); }
+  }
+  window.loadClient=loadClient;
+  loadClient();
+  setInterval(()=>{ if(agentToken && state.role==='agent' && !busy) refreshAgent(); },20000);
+})();
 </script></body></html>
+
+
+
 
 
 
